@@ -16,6 +16,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _isSignedIn = false;
   bool _obscurePassword = true;
 
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

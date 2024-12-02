@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 class SignInScreen extends StatefulWidget {
   SignInScreen({super.key});
 
@@ -12,6 +12,47 @@ class _SignInScreenState extends State<SignInScreen> {
   final TextEditingController _usernameController = TextEditingController();
 
   final TextEditingController _passswordController = TextEditingController();
+
+  void _signIn() async {
+    try {
+      final Future<SharedPreferences> prefsFuture =
+      SharedPreferences.getInstance();
+      final String username = _usernameController.text;
+      final String password = _passwordController.text;
+      print('Sign in attempt');
+      if (username.isNotEmpty && password.isNotEmpty) {
+        final SharedPreferences prefs = await prefsFuture;
+        final data = await _retrieveAndDecryptDataFromPrefs(prefs);
+        if (data.isNotEmpty) {
+          final decryptedUsername = data['username'];
+          final decryptedPassword = data['password'];
+          if (username == decryptedUsername && password == decryptedPassword) {
+            _errorText = '';
+            _isSignedIn = true;
+            prefs.setBool('isSignedIn', true);
+            // Pemanggilan untuk menghapus semua halaman dalam tumpukan navigasi
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            });
+            // Sign in berhasil, navigasikan ke layar utama
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.pushReplacementNamed(context, '/');
+            });
+            print('Sign in succeeded');
+          } else {
+            print('Username or password is incorrect');
+          }
+        } else {
+          print('No stored credentials found');
+        }
+      } else {
+        print('Username and password cannot be empty');
+        // Tambahkan pesan untuk kasus ketika username atau password kosong
+      }
+    } catch (e) {
+      print('An error occurred: $e');
+    }
+  }
 
   String _errorText = '';
   bool _isSignedIn = false;
