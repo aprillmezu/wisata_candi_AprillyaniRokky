@@ -1,124 +1,225 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:wisata_candi/screens/favorite_screen.dart';
-import 'package:wisata_candi/screens/home_screen.dart';
-import 'package:wisata_candi/screens/search_screen.dart';
-import 'package:wisata_candi/screens/detail_screen.dart';
-import 'package:wisata_candi/data/candi_data.dart';
-import 'package:wisata_candi/screens/profil_screen.dart';
-import 'package:wisata_candi/screens/sign_in_screen.dart';
-import 'package:wisata_candi/screens/sign_up_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wisata_candi/models/candi.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+class DetailScreen extends StatefulWidget {
+  final Candi candi;
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const DetailScreen({super.key, required this.candi});
 
-  // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'wisata candi',
-      theme: ThemeData(
-        appBarTheme: const AppBarTheme(
-            iconTheme: IconThemeData(color: Colors.deepPurple),
-            titleTextStyle: TextStyle(
-              color: Colors.deepPurple,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            )
-        ),
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple).copyWith(
-          primary: Colors.deepPurple,
-          surface: Colors.deepPurple[50],
-        ),
-        useMaterial3: true,
-      ),
+  State<DetailScreen> createState() => _DetailScreenState();
+}
+class _DetailScreenState extends State<DetailScreen> {
+  bool isFavorite = false;
+  bool isSignedIn = false;
 
-      initialRoute: '/',
-      routes: {
-        '/homescreen': (context) => const HomeScreen(),
-        '/signin': (context) => SignInScreen(),
-        '/signup': (context) => SignUpScreen(),
-      },
-    );
+  // memeriksa status sign in
+  void _checkSignInStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool signedIn = prefs.getBool('isSignedIn') ?? false;
+    setState(() {
+      isSignedIn = signedIn;
+    });
   }
-}
-// home: ProfileScreen(),
-// home: DetailScreen(candi: candiList[0]),
-// home: SignInScreen(),
-//  home: SignUpScreen(),
-//  home: SearchScreen(),
-// home: HomeScreen(),
-// home: MainScreen(),
 
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  // membuat status favorite
+  void _loadFavoriteStatus() async{
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool favorite = prefs.getBool('favorite_${widget.candi.name}') ?? false;
+    setState(() {
+      isFavorite = favorite;
+    });
+  }
+  Future<void>_toggleFavorite() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    //   Memerikasa apakah pengguna sudah sign in
+    if(!isSignedIn){
+      //   jika belum sign in, arahkan ke signInScreen
+      WidgetsBinding.instance.addPostFrameCallback((_){
+        Navigator.pushReplacementNamed(context, '/signin');
+      });
+      return;
+    }
+    bool favoriteStatus = !isFavorite;
+    prefs.setBool('favorite_${widget.candi.name}', favoriteStatus);
 
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
+    setState(() {
+      isFavorite = favoriteStatus;
+    });
+  }
 
-class _MainScreenState extends State<MainScreen> {
-  // TODO: 1. Deklarasikan variabel
-  int _currentIndex = 0;
-  final List<Widget> _children = [
-    HomeScreen(),
-    SearchScreen(),
-    FavoriteScreen(),
-    ProfileScreen(),
-  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // TODO: 2. Buat properti body berupa widget yang ditampilkan
-      body: _children[_currentIndex],
-      // TODO: 3. Buat properti bottomNavigationBar dengan nilai Theme
-      bottomNavigationBar: Theme(
-        // TODO: 4. Buat data dan Child dari Theme
-        data: Theme.of(context).copyWith(canvasColor: Colors.deepPurple[50]),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(
-                Icons.home,
-                color: Colors.deepPurple,
-              ),
-              label: 'Home',
+      body: SingleChildScrollView( // Tambahkan SingleChildScrollView di sini
+        child: Column(
+          children: [
+            //detail header
+            Stack(
+              children: [
+                //padding image
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(
+                      widget.candi.imageAsset,
+                      width: double.infinity,
+                      height: 300,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                //padding back button
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 32),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurple[100]?.withOpacity(0.8),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.arrow_back),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            BottomNavigationBarItem(
-              icon: Icon(
-                Icons.search,
-                color: Colors.deepPurple,
+            //detail info
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 16),
+                  // info atas(nama candi dan tombol favorit)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        widget.candi.name,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          _toggleFavorite();
+                        },
+                        icon: Icon(isSignedIn && isFavorite
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                          color: isSignedIn && isFavorite ? Colors.red : null,),
+                      )
+                    ],
+                  ),
+                  // info tengah (lokasi, dibangun, tipe)
+                  SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Icon(Icons.place, color: Colors.red),
+                      SizedBox(width: 8),
+                      SizedBox(
+                        width: 70,
+                        child: Text(
+                          'Lokasi',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Text(': ${widget.candi.location}'),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_month, color: Colors.blue),
+                      SizedBox(width: 8),
+                      SizedBox(
+                        width: 70,
+                        child: Text(
+                          'Dibangun',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Text(': ${widget.candi.built}'),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Icon(Icons.house, color: Colors.green),
+                      SizedBox(width: 8),
+                      SizedBox(
+                        width: 70,
+                        child: Text(
+                          'Tipe',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Text(': ${widget.candi.type}'),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  Text(widget.candi.description),
+                  Divider(color: Colors.deepPurple.shade100),
+                  SizedBox(height: 16),
+                ],
               ),
-              label: 'Search',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(
-                Icons.favorite,
-                color: Colors.deepPurple,
+            // Detail Galeri
+            Padding(
+              padding: const EdgeInsets.all(15),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Divider(color: Colors.deepPurple.shade100),
+                  Text(
+                    'Galeri',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ), // Koma sudah ada
+                  SizedBox(height: 10), // Ukuran box
+                  SizedBox(
+                    height: 100,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: widget.candi.imageUrls.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: EdgeInsets.only(left: 8),
+                          child: GestureDetector(
+                            onTap: () {},
+                            child: Container(
+                              decoration: BoxDecoration(),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: CachedNetworkImage(
+                                  imageUrl: widget.candi.imageUrls[index],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Tap untuk memperbesar', style: TextStyle(),
+                  ),
+                ],
               ),
-              label: 'Favorite',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(
-                Icons.person,
-                color: Colors.deepPurple,
-              ),
-              label: 'Person',
             ),
           ],
-          selectedItemColor: Colors.deepPurple,
-          unselectedItemColor: Colors.deepPurple[100],
-          showSelectedLabels: true,
         ),
       ),
     );
