@@ -23,10 +23,10 @@ class _SignInScreenState extends State<SignInScreen> {
       Future<SharedPreferences> prefs,
       ) async {
     final sharedPreferences = await prefs;
-    final encryptedUsername = sharedPreferences.getSring('username') ?? '';
-    final encryptedPassword = sharedPreferences.getSring('password') ?? '';
-    final keyString = sharedPreferences.getSring('key') ?? '';
-    final ivString = sharedPreferences.getSring('iv') ?? '';
+    final encryptedUsername = sharedPreferences.getString('username') ?? '';
+    final encryptedPassword = sharedPreferences.getString('password') ?? '';
+    final keyString = sharedPreferences.getString('key') ?? '';
+    final ivString = sharedPreferences.getString('iv') ?? '';
 
     final encrypt.Key key = encrypt.Key.fromBase64(keyString);
     final iv = encrypt.IV.fromBase64(ivString);
@@ -62,7 +62,7 @@ class _SignInScreenState extends State<SignInScreen> {
             setState(() {
               _errorText = '';
               _isSignedIn = true;
-              prefs.getBool('isSignedIn', true);
+              prefs.setBool('isSignedIn', true);
             });
 
             // Pemanggilan untuk menghapus halaman dalam tumpukan navigasi
@@ -189,13 +189,6 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 }
 
-class SharedPreferences {
-  getSring(String s) {}
-
-  static getInstance() {}
-
-  getBool(String s, bool favoriteStatus) {}
-}
 
 
 // import 'package:flutter/gestures.dart';
